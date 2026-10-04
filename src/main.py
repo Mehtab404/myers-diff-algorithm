@@ -159,7 +159,21 @@ def diff_marks(a, b):
     return del_a, ins_b
 
 
-def build_output(a, b, del_a, ins_b):
+def ranges(marks):
+    """Turn a 0/1 bytearray into 'start-end,start-end' (or '.' if no 1s)."""
+    n = len(marks)
+    parts = []
+    p = marks.find(1)
+    while p != -1:
+        q = marks.find(0, p)
+        if q == -1:
+            q = n
+        parts.append("%d-%d" % (p, q))
+        p = marks.find(1, q) if q < n else -1
+    return ",".join(parts) if parts else "."
+
+
+def build_output(a, b, del_a, ins_b, highlight):
     """Walk the edit script and build the output lines (deletes before inserts)."""
     na = len(a)
     nb = len(b)
@@ -190,7 +204,17 @@ def build_output(a, b, del_a, ins_b):
         dels = a[i:i2]
         inss = b[j:j2]
         out.extend([b"-" + line for line in dels])
-        out.extend([b"+" + line for line in inss])
+        if not highlight:
+            out.extend([b"+" + line for line in inss])
+        else:
+            paired = min(len(dels), len(inss))
+            for t in range(len(inss)):
+                out.append(b"+" + inss[t])
+                if t < paired:
+                    old = dels[t].decode("utf-8", "surrogateescape")
+                    new = inss[t].decode("utf-8", "surrogateescape")
+                    dm, im = diff_marks(old, new)
+                    out.append(("? %s | %s" % (ranges(dm), ranges(im))).encode("utf-8"))
         i = i2
         j = j2
     if i < na:
@@ -210,7 +234,7 @@ def main() -> int:
         print("error: cannot read file: %s" % e, file=sys.stderr)
         return 2
     del_a, ins_b = diff_marks(a, b)
-    out = build_output(a, b, del_a, ins_b)
+    out = build_output(a, b, del_a, ins_b, command == "highlight")
     if out:
         sys.stdout.buffer.write(b"\n".join(out) + b"\n")
         sys.stdout.buffer.flush()
