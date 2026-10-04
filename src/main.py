@@ -159,6 +159,45 @@ def diff_marks(a, b):
     return del_a, ins_b
 
 
+def build_output(a, b, del_a, ins_b):
+    """Walk the edit script and build the output lines (deletes before inserts)."""
+    na = len(a)
+    nb = len(b)
+    out = []
+    i = j = 0
+    while True:
+        nd = del_a.find(1, i)
+        ni = ins_b.find(1, j)
+        if nd == -1 and ni == -1:
+            break
+        # keep lines until the next change
+        c = na - i
+        if nd != -1:
+            c = min(c, nd - i)
+        if ni != -1:
+            c = min(c, ni - j)
+        if c:
+            out.extend([b" " + line for line in a[i:i + c]])
+            i += c
+            j += c
+        # one change block: a run of deletes, then a run of inserts
+        i2 = del_a.find(0, i)
+        if i2 == -1:
+            i2 = na
+        j2 = ins_b.find(0, j)
+        if j2 == -1:
+            j2 = nb
+        dels = a[i:i2]
+        inss = b[j:j2]
+        out.extend([b"-" + line for line in dels])
+        out.extend([b"+" + line for line in inss])
+        i = i2
+        j = j2
+    if i < na:
+        out.extend([b" " + line for line in a[i:]])
+    return out
+
+
 def main() -> int:
     if len(sys.argv) != 4 or sys.argv[1] not in ("lines", "highlight"):
         print("usage: main.py lines|highlight A_PATH B_PATH", file=sys.stderr)
@@ -170,6 +209,11 @@ def main() -> int:
     except OSError as e:
         print("error: cannot read file: %s" % e, file=sys.stderr)
         return 2
+    del_a, ins_b = diff_marks(a, b)
+    out = build_output(a, b, del_a, ins_b)
+    if out:
+        sys.stdout.buffer.write(b"\n".join(out) + b"\n")
+        sys.stdout.buffer.flush()
     return 0
 
 
