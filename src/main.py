@@ -94,12 +94,9 @@ def middle_snake(A, B, Ar, Br, n, m):
 
 
 def diff_marks(a, b):
-    """Minimal diff of two sequences.
-
-    Returns (del_a, ins_b): bytearrays with 1 at every element of a that is
-    deleted and every element of b that is inserted. The elements marked 0
-    are matched to each other in order.
-    """
+    """Compares two sequences and finds which elements are deleted and inserted.
+    Returns two bytearrays where 1 means the element was changed and 0 means
+    the element is unchanged."""
     na = len(a)
     nb = len(b)
     # Give every distinct item a small integer so comparisons are cheap.
@@ -223,6 +220,7 @@ def build_output(a, b, del_a, ins_b, highlight):
 
 
 def main() -> int:
+
     if len(sys.argv) != 4 or sys.argv[1] not in ("lines", "highlight"):
         print("usage: main.py lines|highlight A_PATH B_PATH", file=sys.stderr)
         return 2
