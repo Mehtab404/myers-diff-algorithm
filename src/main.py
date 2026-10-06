@@ -1,8 +1,4 @@
-"""Myers' O(ND) diff: line diff (Part A) and changed-character ranges (Part B).
 
-The diff core works on any sequence of hashable items, so the same code
-diffs lines (bytes) for Part A and characters (str) for Part B.
-"""
 import sys
 
 
